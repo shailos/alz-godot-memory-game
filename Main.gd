@@ -1079,10 +1079,20 @@ func _on_next_pressed():
 		# Reset button styles for next question
 		_reset_grid_styles()
 
-		# Re-enable grid for next question
+		# Clear all displayed objects from previous question to prevent repetition
 		for i in range(GRID_SIZE):
 			var b: Button = grid.get_child(i)
-			b.disabled = false
+			b.text = ""  # Clear button text
+			# Clear child labels if they exist
+			var vbox = b.get_node_or_null("Content")
+			if vbox:
+				var emoji_label = vbox.get_node_or_null("EmojiLabel")
+				var text_label = vbox.get_node_or_null("TextLabel")
+				if emoji_label:
+					emoji_label.text = ""
+				if text_label:
+					text_label.text = ""
+			b.disabled = false  # Re-enable grid for next question
 
 		next_button.visible = false
 		_ask_current_question()
