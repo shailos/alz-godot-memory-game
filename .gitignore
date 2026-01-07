@@ -1,0 +1,62 @@
+# Godot-specific ignores
+.godot/
+export_presets.cfg
+*.tmp
+*.pidb
+*.mono/
+
+# Imported files (assets)
+*.import
+
+# Exported files
+export/
+
+# History directories
+.history/
+.vscode/
+.idea/
+
+# OS-specific files
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# Linux
+*~
+.directory
+.Trash-*
+
+# Editor backups
+*~
+*.swp
+*.swo
+*#
+.#*
+
+# Temporary files
+*.tmp
+*.bak
+*.cache
+
+# User-specific settings
+user://
+
+# Logs
+*.log
+
+# Build artifacts
+*.exe
+*.app
+*.apk
+*.aab
+*.zip
+*.tar.gz
