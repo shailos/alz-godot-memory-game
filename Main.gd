@@ -588,8 +588,37 @@ func _build_grid_buttons():
 		pressed_style.bg_color = pressed_style.bg_color.darkened(0.1)
 		b.add_theme_stylebox_override("pressed", pressed_style)
 		
-		b.text = ""  # Text set dynamically during study phase
-		# Note: Button nodes automatically center their text, no alignment property needed
+		b.text = ""  # Text will be set via child labels, not button.text
+		
+		# Create a VBoxContainer inside the button for emoji and text
+		var vbox := VBoxContainer.new()
+		vbox.name = "Content"
+		vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
+		vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		vbox.add_theme_constant_override("separation", 2)
+		b.add_child(vbox)
+		
+		# Create label for emoji (large) - will be populated during study phase
+		var emoji_label := Label.new()
+		emoji_label.name = "EmojiLabel"
+		emoji_label.text = ""
+		emoji_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		emoji_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		emoji_label.add_theme_font_size_override("font_size", 64)  # Large emoji
+		emoji_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		vbox.add_child(emoji_label)
+		
+		# Create label for text (smaller) - will be populated during study phase
+		var text_label := Label.new()
+		text_label.name = "TextLabel"
+		text_label.text = ""
+		text_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		text_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+		text_label.add_theme_font_size_override("font_size", 20)  # Smaller text
+		text_label.add_theme_color_override("font_color", Color(0.1, 0.1, 0.15))  # Dark text
+		text_label.size_flags_vertical = Control.SIZE_SHRINK_END
+		vbox.add_child(text_label)
 		
 		# Connect signal using lambda to capture cell index
 		b.pressed.connect(func(): _on_cell_pressed(i))
@@ -671,6 +700,15 @@ func _show_study_board():
 		var b: Button = grid.get_child(i)
 		b.disabled = true  # Prevent clicking during study
 		b.text = ""
+		# Clear child labels if they exist
+		var vbox = b.get_node_or_null("Content")
+		if vbox:
+			var emoji_label = vbox.get_node_or_null("EmojiLabel")
+			var text_label = vbox.get_node_or_null("TextLabel")
+			if emoji_label:
+				emoji_label.text = ""
+			if text_label:
+				text_label.text = ""
 
 	# Place objects on their assigned cells with emoji and text
 	# Research: Visual memory is often more robust than verbal memory, especially for dementia patients
@@ -679,12 +717,29 @@ func _show_study_board():
 		var idx = positions[obj]
 		var btn: Button = grid.get_child(idx)
 		var emoji = _get_object_emoji(obj)
-		if emoji != "":
-			btn.text = emoji + "\n" + obj  # Emoji above, text below
+		
+		# Get the child labels (created in _build_grid_buttons)
+		var vbox = btn.get_node_or_null("Content")
+		if vbox:
+			var emoji_label = vbox.get_node_or_null("EmojiLabel")
+			var text_label = vbox.get_node_or_null("TextLabel")
+			
+			if emoji != "":
+				# Set emoji in large label and text in smaller label
+				if emoji_label:
+					emoji_label.text = emoji
+				if text_label:
+					text_label.text = obj
+			else:
+				# Fallback: show text in emoji label if no emoji
+				if emoji_label:
+					emoji_label.text = obj
+					emoji_label.add_theme_font_size_override("font_size", 32)  # Medium size for text-only
+				if text_label:
+					text_label.text = ""
 		else:
-			btn.text = obj  # Fallback to text only
-		btn.add_theme_color_override("font_color", Color(0.1, 0.1, 0.15))  # Very dark text for visibility
-		btn.add_theme_font_size_override("font_size", 24)  # Slightly larger text
+			# Fallback if structure doesn't exist
+			btn.text = obj if emoji == "" else emoji + "\n" + obj
 
 func _restore_pastel_colors():
 	"""
@@ -771,6 +826,15 @@ func _hide_board():
 	for i in range(GRID_SIZE):
 		var b: Button = grid.get_child(i)
 		b.text = ""  # Clear object names
+		# Clear child labels if they exist
+		var vbox = b.get_node_or_null("Content")
+		if vbox:
+			var emoji_label = vbox.get_node_or_null("EmojiLabel")
+			var text_label = vbox.get_node_or_null("TextLabel")
+			if emoji_label:
+				emoji_label.text = ""
+			if text_label:
+				text_label.text = ""
 		b.disabled = false  # Enable clicking for quiz
 
 func _start_quiz():
