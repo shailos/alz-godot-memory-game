@@ -936,7 +936,7 @@ func _on_cell_pressed(cell_index: int):
 		grid.get_child(i).disabled = true
 
 	# Show correct answer location visually (gentle feedback)
-	# Highlight correct cell with visual indicator
+	# Highlight correct cell with visual indicator and display the object
 	var correct_btn: Button = grid.get_child(correct_index)
 	var style_box := correct_btn.get_theme_stylebox("normal").duplicate() as StyleBoxFlat
 	if style_box:
@@ -946,6 +946,27 @@ func _on_cell_pressed(cell_index: int):
 		style_box.border_width_top = 4
 		style_box.border_width_bottom = 4
 		correct_btn.add_theme_stylebox_override("normal", style_box)
+	
+	# Display the correct object on the correct cell
+	var emoji = _get_object_emoji(obj)
+	var vbox = correct_btn.get_node_or_null("Content")
+	if vbox:
+		var emoji_label = vbox.get_node_or_null("EmojiLabel")
+		var text_label = vbox.get_node_or_null("TextLabel")
+		
+		if emoji != "":
+			# Set emoji in large label and text in smaller label
+			if emoji_label:
+				emoji_label.text = emoji
+			if text_label:
+				text_label.text = obj
+		else:
+			# Fallback: show text in emoji label if no emoji
+			if emoji_label:
+				emoji_label.text = obj
+				emoji_label.add_theme_font_size_override("font_size", 32)  # Medium size for text-only
+			if text_label:
+				text_label.text = ""
 
 	# Research Enhancement: Recognition Error Handling (semantic false alarms research)
 	# Check if player selected location of a semantically similar object (same semantic group)
@@ -988,32 +1009,28 @@ func _on_cell_pressed(cell_index: int):
 	
 	# Provide encouraging feedback based on correctness
 	# Research foundation: Low-pressure engagement, no penalties, gentle encouragement
+	# Show feedback in instruction_label at top to prevent screen bouncing
 	if cell_index == correct_index:
 		score += 1
 		if round_number == 3 and quiz_index == 0 and delayed_recall_objects.size() > 0:
-			feedback_label.text = "Well done! You remembered!"
+			instruction_label.text = "That's wonderful! You remembered."
 		else:
-			feedback_label.text = "Well done!"
+			instruction_label.text = "That's right! Well done."
 	elif is_semantic_similar_selection:
 		# Research Enhancement: Recognition Error Handling (semantic false alarms research)
 		# Selected location of semantically similar object - provide specific gentle feedback
 		# Research: Perirhinal cortex - semantic false alarms (confusing similar objects) are informative
-		# Feedback matches user requirement: "Good try — those were very similar."
-		feedback_label.text = "Good try — those were very similar."
+		instruction_label.text = "You're close! Those were very similar."
 	else:
 		# Gentle, encouraging feedback - no penalty tone
 		# Research Enhancement: Recognition Error Handling (semantic false alarms research)
 		# Even incorrect answers receive neutral/encouraging feedback (perirhinal object recognition research)
-		# Feedback matches user requirement: "Good try — let's keep going."
-		feedback_label.text = "Good try — let's keep going."
+		instruction_label.text = "That's okay. Let's try the next one."
 	
-	# Show feedback label (normal horizontal text, at bottom)
-	feedback_label.visible = true
-	# Ensure label expands horizontally to display text properly (not vertically stacked)
-	feedback_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-
-	# Remove question from top, move button up
-	instruction_label.text = ""
+	# Keep instruction label visible and feedback label hidden to prevent layout shifts
+	instruction_label.visible = true
+	feedback_label.visible = false
+	feedback_label.text = ""
 	
 	# Show Next button to continue (keep consistent position, move up)
 	next_button.visible = true
@@ -1125,10 +1142,18 @@ func _finish():
 	
 	# Check if session should end (after 3 rounds OR fatigue detected)
 	if round_number >= 3 or should_end_early:
-		instruction_label.text = ""
-		instruction_label.visible = false
-		feedback_label.visible = true
-		feedback_label.text = score_text + "\n\nGreat Job Today!"
+		# Show score and friendly message in instruction_label to prevent screen bouncing
+		instruction_label.visible = true
+		feedback_label.visible = false
+		# Context-aware message based on performance (using existing accuracy variable)
+		var end_message := ""
+		if accuracy >= 0.8:
+			end_message = "You did wonderfully today!"
+		elif accuracy >= 0.5:
+			end_message = "You're doing great! Keep it up."
+		else:
+			end_message = "Thank you for playing with us today."
+		instruction_label.text = score_text + "\n\n" + end_message
 		# Make feedback label big, centered, positioned higher up
 		feedback_label.add_theme_font_size_override("font_size", 52)  # Large text that fits on screen
 		feedback_label.add_theme_color_override("font_color", Color(0.15, 0.15, 0.2))  # Dark text
@@ -1146,11 +1171,18 @@ func _finish():
 			vbox.add_theme_constant_override("separation", 50)  # More spacing to move buttons lower
 		return
 	
-	# Show feedback in feedback_label (big and centered), instruction_label is empty
-	instruction_label.text = ""
-	instruction_label.visible = false
-	feedback_label.visible = true
-	feedback_label.text = score_text + "\n\nAmazing Job!"
+	# Show feedback in instruction_label (top) to prevent screen bouncing
+	instruction_label.visible = true
+	feedback_label.visible = false
+	# Context-aware message based on performance for mid-session rounds (using existing accuracy variable)
+	var round_message := ""
+	if accuracy >= 0.8:
+		round_message = "Wonderful! You're doing really well."
+	elif accuracy >= 0.5:
+		round_message = "You're doing good! Keep going."
+	else:
+		round_message = "You're trying your best. That's what matters."
+	instruction_label.text = score_text + "\n\n" + round_message
 	# Make feedback label big, centered, positioned higher up
 	feedback_label.add_theme_font_size_override("font_size", 52)  # Large text that fits on screen
 	feedback_label.add_theme_color_override("font_color", Color(0.15, 0.15, 0.2))  # Dark text
