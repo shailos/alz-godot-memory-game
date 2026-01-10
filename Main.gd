@@ -449,31 +449,21 @@ func _update_difficulty_from_round():
 		avg_time = total_time / float(response_times.size())
 		last_avg_time = avg_time
 	
-	# Normalize response time (0-10 seconds range, faster = higher value)
-	# Slower than 10s = easier, faster than 3s = harder
-	var time_factor := 0.0
-	if avg_time > 0.0:
-		var normalized_time: float = clamp(avg_time / 10.0, 0.0, 1.0)
-		time_factor = (1.0 - normalized_time) * 0.3  # Up to 0.3 influence
-
-	# Factor 3: Frequency of play (more sessions = slight difficulty increase)
-	# Multiple sessions per day suggests engagement, can handle slightly more challenge
-	var frequency_factor := 0.0
-	if sessions_today >= 3:
-		frequency_factor = 0.05  # Slight boost for frequent players
-	elif sessions_today >= 2:
-		frequency_factor = 0.02
-	
 	# Combined adaptive difficulty algorithm with dynamic level dropping
 	# If user performs poorly (< 40%), difficulty drops to level below after 2 consecutive poor rounds
-	# Once they perform well again (>= 60%), difficulty increases back up after 2 consecutive good rounds
+	# Once they perform well again (>= 2/3 correct), difficulty increases back up after 2 consecutive good rounds
+	# IMPORTANT: Number of objects ONLY increases if 2/3 or more were correct in previous round
 	# This provides a more responsive and supportive difficulty adjustment
 	# Research: Supports user-centered design - difficulty adapts to current performance state
 	
 	var accuracy_adjustment := 0.0
 	
 	# Determine performance level and track consecutive rounds
-	if acc >= 0.60:  # Good performance (60% or higher)
+	# Difficulty only increases if player gets 2/3 correct or more (66.67%)
+	var two_thirds_threshold := 2.0 / 3.0  # Approximately 0.6667
+	var can_increase_difficulty := acc >= two_thirds_threshold  # Only allow increases if >= 2/3 correct
+	
+	if acc >= two_thirds_threshold:  # Good performance (2/3 or more correct)
 		consecutive_good_performance += 1
 		consecutive_poor_performance = 0  # Reset poor performance counter
 		
@@ -481,7 +471,7 @@ func _update_difficulty_from_round():
 		if consecutive_good_performance >= 2:
 			accuracy_adjustment = 0.20  # Increase by one object level (3→4→5→...→9)
 			consecutive_good_performance = 0  # Reset after raising
-			print("Difficulty: Raising level after 2 consecutive good rounds (accuracy >= 60%)")
+			print("Difficulty: Raising level after 2 consecutive good rounds (accuracy >= 2/3 or ", two_thirds_threshold, ")")
 	elif acc < 0.40:  # Poor performance (below 40%)
 		consecutive_poor_performance += 1
 		consecutive_good_performance = 0  # Reset good performance counter
@@ -491,20 +481,43 @@ func _update_difficulty_from_round():
 			accuracy_adjustment = -0.20  # Decrease by one object level
 			consecutive_poor_performance = 0  # Reset after dropping
 			print("Difficulty: Dropping level after 2 consecutive poor rounds (accuracy < 40%)")
-	else:  # Moderate performance (40-60%)
+	else:  # Moderate performance (40% to 66.67%)
 		# Reset both counters - moderate performance doesn't trigger changes
 		consecutive_poor_performance = 0
 		consecutive_good_performance = 0
 		accuracy_adjustment = 0.0  # Keep difficulty the same
 	
+	# Factor 2: Response time (can only increase difficulty if accuracy >= 2/3)
+	# Normalize response time (0-10 seconds range, faster = higher value)
+	# Slower than 10s = easier, faster than 3s = harder
+	var time_factor := 0.0
+	if avg_time > 0.0 and can_increase_difficulty:
+		# Only allow time factor to increase difficulty if player got 2/3 or more correct
+		var normalized_time: float = clamp(avg_time / 10.0, 0.0, 1.0)
+		time_factor = (1.0 - normalized_time) * 0.3  # Up to 0.3 influence
+	# If accuracy < 2/3, time_factor stays at 0.0 (cannot increase difficulty)
+
+	# Factor 3: Frequency of play (can only increase difficulty if accuracy >= 2/3)
+	# Multiple sessions per day suggests engagement, can handle slightly more challenge
+	var frequency_factor := 0.0
+	if can_increase_difficulty:
+		# Only allow frequency factor to increase difficulty if player got 2/3 or more correct
+		if sessions_today >= 3:
+			frequency_factor = 0.05  # Slight boost for frequent players
+		elif sessions_today >= 2:
+			frequency_factor = 0.02
+	# If accuracy < 2/3, frequency_factor stays at 0.0 (cannot increase difficulty)
+	
 	# Research Enhancement: Caregiver Assist Bias (user-centered design research)
 	# Research foundation: One-size-fits-all does not work; dementia severity varies widely
 	# Internal variable allows subtle difficulty adjustment without exposing to user
 	# Bias ranges from -0.2 (easier) to +0.2 (more challenging), defaults to 0.0
+	# NOTE: Bias can still increase difficulty even if accuracy < 2/3 (caregiver override)
 	var clamped_bias: float = clamp(caregiver_assist_bias, -0.2, 0.2)
 	var bias_adjustment: float = clamped_bias
 	
 	# Apply all factors (including caregiver bias)
+	# Note: time_factor and frequency_factor are now 0.0 if accuracy < 2/3, preventing object count increase
 	var old_difficulty := difficulty
 	difficulty += accuracy_adjustment + time_factor + frequency_factor + bias_adjustment
 	
@@ -1549,6 +1562,14 @@ func _toggle_pause():
 
 func _on_reset_pressed():
 	"""Handle reset button - reset progress and go back to first round"""
+	# Remove end session buttons if they exist
+	if return_to_menu_button:
+		var button_container = return_to_menu_button.get_parent()
+		if button_container and button_container.name == "EndSessionButtons":
+			button_container.queue_free()
+		return_to_menu_button = null
+		continue_button = null
+	
 	# Reset all progress
 	difficulty = 0.0
 	round_number = 0
@@ -1570,6 +1591,17 @@ func _on_reset_pressed():
 	# Reset consecutive performance tracking
 	consecutive_poor_performance = 0
 	consecutive_good_performance = 0
+	
+	# Reset phase to study (not done)
+	phase = "study"
+	
+	# Hide the regular next button if it was visible
+	if next_button:
+		next_button.visible = false
+	
+	# Ensure grid is visible
+	if grid:
+		grid.visible = true
 	
 	# Save the reset state
 	_save_progress()

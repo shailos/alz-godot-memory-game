@@ -1,25 +1,9 @@
-[gd_scene load_steps=5 format=3 uid="uid://c11kx6kerp00w"]
+[gd_scene load_steps=2 format=3 uid="uid://dl4wfsbvnn1dp"]
 
-[ext_resource type="Script" path="res://Main.gd" id="1_57pgo"]
-[ext_resource type="Script" path="res://TapTarget.gd" id="2_13qwv"]
-
-[sub_resource type="CompressedTexture2D" id="CompressedTexture2D_kpv3m"]
-
-[sub_resource type="RectangleShape2D" id="RectangleShape2D_t63dt"]
+[ext_resource type="Script" path="res://OddOneOut.gd" id="1_oddoneout"]
 
 [node name="Node2D" type="Node2D"]
-script = ExtResource("1_57pgo")
-
-[node name="TargetSprite" type="Sprite2D" parent="."]
-position = Vector2(733, 437)
-scale = Vector2(2.45312, 2.20312)
-texture = SubResource("CompressedTexture2D_kpv3m")
-
-[node name="TapArea" type="Area2D" parent="TargetSprite"]
-script = ExtResource("2_13qwv")
-
-[node name="TapCollision" type="CollisionShape2D" parent="TargetSprite/TapArea"]
-shape = SubResource("RectangleShape2D_t63dt")
+script = ExtResource("1_oddoneout")
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 
@@ -53,8 +37,7 @@ custom_minimum_size = Vector2(0, 80)
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_font_sizes/font_size = 32
-text = "Tap the object when it appears
-"
+text = "Tap the one that does NOT belong."
 horizontal_alignment = 1
 vertical_alignment = 1
 autowrap_mode = 2

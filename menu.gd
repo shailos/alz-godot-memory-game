@@ -2,7 +2,8 @@ extends Control
 
 # UI Elements
 @onready var memory_game_label: Label
-@onready var start_button: Button
+@onready var memory_button: Button
+@onready var odd_one_out_button: Button
 
 func _ready():
 	print("MENU READY running")
@@ -51,7 +52,7 @@ func _setup_ui():
 	container.alignment = BoxContainer.ALIGNMENT_CENTER  # centers children inside VBox too
 	center.add_child(container)
 
-	# Create "Memory Game" label
+	# Create "Memory Garden" label
 	memory_game_label = Label.new()
 	memory_game_label.text = "Memory Garden"
 	memory_game_label.add_theme_font_size_override("font_size", 80)
@@ -62,21 +63,31 @@ func _setup_ui():
 	memory_game_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	container.add_child(memory_game_label)
 
-	# Create Start button
-	start_button = Button.new()
-	start_button.name = "StartButton"
-	start_button.text = "Begin"
-	start_button.custom_minimum_size = Vector2(150, 50)
-	start_button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	start_button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	start_button.pressed.connect(_on_start_button_pressed)
-	container.add_child(start_button)
+	# Create Memory Garden button
+	memory_button = Button.new()
+	memory_button.name = "MemoryButton"
+	memory_button.text = "Gallery Game"
+	memory_button.custom_minimum_size = Vector2(200, 50)
+	memory_button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	memory_button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	memory_button.pressed.connect(_on_memory_button_pressed)
+	container.add_child(memory_button)
+	_style_button(memory_button)
 
-	_style_start_button()
+	# Create Odd One Out button
+	odd_one_out_button = Button.new()
+	odd_one_out_button.name = "OddOneOutButton"
+	odd_one_out_button.text = "Odd One Out"
+	odd_one_out_button.custom_minimum_size = Vector2(200, 50)
+	odd_one_out_button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	odd_one_out_button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	odd_one_out_button.pressed.connect(_on_odd_one_out_button_pressed)
+	container.add_child(odd_one_out_button)
+	_style_button(odd_one_out_button)
 
-func _style_start_button():
-	"""Style the start button with pastel colors"""
-	if not start_button:
+func _style_button(button: Button):
+	"""Style buttons with pastel colors"""
+	if not button:
 		return
 	
 	var style_box := StyleBoxFlat.new()
@@ -90,19 +101,23 @@ func _style_start_button():
 	style_box.corner_radius_top_right = 8
 	style_box.corner_radius_bottom_left = 8
 	style_box.corner_radius_bottom_right = 8
-	start_button.add_theme_stylebox_override("normal", style_box)
+	button.add_theme_stylebox_override("normal", style_box)
 	
 	var hover_style := style_box.duplicate()
 	hover_style.bg_color = hover_style.bg_color.lightened(0.1)
-	start_button.add_theme_stylebox_override("hover", hover_style)
+	button.add_theme_stylebox_override("hover", hover_style)
 	
 	var pressed_style := style_box.duplicate()
 	pressed_style.bg_color = pressed_style.bg_color.darkened(0.1)
-	start_button.add_theme_stylebox_override("pressed", pressed_style)
+	button.add_theme_stylebox_override("pressed", pressed_style)
 	
-	start_button.add_theme_font_size_override("font_size", 20)
-	start_button.add_theme_color_override("font_color", Color(0.15, 0.15, 0.2))
+	button.add_theme_font_size_override("font_size", 20)
+	button.add_theme_color_override("font_color", Color(0.15, 0.15, 0.2))
 
-func _on_start_button_pressed():
-	"""Start the Memory Game (Module 1: Object Memory / Episodic Memory)"""
+func _on_memory_button_pressed():
+	"""Start the Memory Garden game"""
 	get_tree().change_scene_to_file("res://main.tscn")
+
+func _on_odd_one_out_button_pressed():
+	"""Start the Odd One Out game"""
+	get_tree().change_scene_to_file("res://odd_one_out.tscn")
